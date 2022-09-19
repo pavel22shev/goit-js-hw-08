@@ -1,38 +1,38 @@
+import storageApi from "./storage"
+import throttle from "lodash.throttle"
+const STORAGE_KEYS = "feedback-form-state"
 
-import throttle from 'lodash.throttle';
 
-const feedbackForm = document.querySelector('.feedback-form');
-const localStorageKey = 'feedback-form-state';
+const formRef = document.querySelector(".feedback-form")
+initialPage();
+formRef.addEventListener('input', throttle(handleInput, 500))
 
-initialForm()
-
-feedbackForm.addEventListener('input', throttle(onInput,500));
-    
-function onInput() {
-    const formData = new FormData(feedbackForm);
-    let userForm = {};
-    formData.forEach((value, name) => (userForm[name] = value));
-    localStorage.setItem(localStorageKey, JSON.stringify(userForm));
-};
-    
-function initialForm() {
-    let persistedForm = localStorage.getItem('localStorageKey');
-    if (persistedForm) {
-        persistedForm = JSON.parse(persistedForm);
-        console.log(persistedForm);
-        Object.entries(persistedForm).forEach(([name, value]) => {
-        form.elements[name].value = value;
-        });
+function handleInput(event) {
+        let savedData = storageApi.load(STORAGE_KEYS);
+    if (!savedData) {
+        savedData = {}
     }
+
+    const { name, value } = event.target
+    
+    savedData[name] = value;
+    storageApi.save(STORAGE_KEYS, savedData);
 }
 
-feedbackForm.addEventListener('submit', onSubmit);
-function onSubmit(evt) {
-  evt.preventDefault();
-  localStorage.removeItem(localStorageKey);
-  let userForm = {};
-  const formData = new FormData(feedbackForm);
-  formData.forEach((value, name) => (userForm[name] = value));
-  console.log(userForm);
-  feedbackForm.reset();
+function initialPage() {
+    const savedData = storageApi.load(STORAGE_KEYS);
+    if (savedData) 
+        Object.entries(savedData).forEach(([name, value]) => {
+            formRef.elements[name].value = value;
+        })
 }
+
+const handleSubmit = (event) => {
+    event.preventDefault()
+    const { email, message } = event.currentTarget;
+    console.log({ email: email.value, message: message.value });
+    event.currentTarget.reset();
+    storageApi.remove(STORAGE_KEYS);
+}
+
+formRef.addEventListener("submit", handleSubmit)
